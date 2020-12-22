@@ -124,7 +124,7 @@ class ST7735(object):
     """Representation of an ST7735 TFT LCD."""
 
     def __init__(self, dc, spi, rst=None, gpio=None, width=ST7735_TFTWIDTH,
-        height=ST7735_TFTHEIGHT):
+        height=ST7735_TFTHEIGHT, clock_hz=SPI_CLOCK_HZ):
         """Create an instance of the display using SPI communication.  Must
         provide the GPIO pin number for the D/C pin and the SPI driver.  Can
         optionally provide the GPIO pin number for the reset pin as the rst
@@ -146,7 +146,7 @@ class ST7735(object):
         # Set SPI to mode 0, MSB first.
         spi.set_mode(0)
         spi.set_bit_order(SPI.MSBFIRST)
-        spi.set_clock_hz(SPI_CLOCK_HZ)
+        spi.set_clock_hz(clock_hz)
         # Create an image buffer.
         self.buffer = Image.new('RGB', (width, height))
 
@@ -331,7 +331,7 @@ class ST7735(object):
         self.data(y1)                    # YEND
         self.command(ST7735_RAMWR)        # write to RAM
 
-    def display(self, image=None):
+    def display(self, image=None, window=None):
         """Write the display buffer or provided image to the hardware.  If no
         image parameter is provided the display buffer will be written to the
         hardware.  If an image is provided, it should be RGB format and the
@@ -340,8 +340,12 @@ class ST7735(object):
         # By default write the internal buffer to the display.
         if image is None:
             image = self.buffer
-        # Set address bounds to entire display.
-        self.set_window()
+        
+        if window is None or image is None:
+            # Set address bounds to entire display.
+            self.set_window()
+        else:
+            self.set_window(*window)
         # Convert image to array of 16bit 565 RGB data bytes.
         # Unfortunate that this copy has to occur, but the SPI byte writing
         # function needs to take an array of bytes and PIL doesn't natively
